@@ -112,7 +112,7 @@ def generate_dynamic_fallback(query: str) -> str:
 
 class ADKOrchestratorPipeline:
     """
-    High-Performance Google ADK Runner Pipeline enforcing decoupled conditional routing.
+    High-Performance Google ADK Runner Pipeline supporting isolated mode-based workflow execution.
     """
     def __init__(self, agent: LlmAgent = orchestrator_agent):
         self.agent = agent
@@ -126,19 +126,70 @@ class ADKOrchestratorPipeline:
         self.session_id = "default_session"
         self.user_id = "default_user"
 
-    async def run_query_async(self, query: str) -> Tuple[str, str]:
+    async def run_query_async(self, query: str, workflow_mode: str = "Orchestrator") -> Tuple[str, str]:
         """
-        Executes query with mandatory intent-based routing and decoupled tool execution.
+        Executes query with mode-based agent isolation and semantic guardrail enforcement.
         """
-        # Step 1: Out-of-Scope Guardrail Check
-        validation_res = semantic_validation(query)
-        if isinstance(validation_res, dict) and not validation_res.get("is_valid", True):
-            rejection_msg = validation_res.get(
+        mode_lower = str(workflow_mode).lower().strip()
+        
+        # 1. Direct Semantic Validation Agent Mode
+        if "semantic" in mode_lower:
+            val_res = semantic_validation(query)
+            if isinstance(val_res, dict):
+                if not val_res.get("is_valid", True):
+                    return val_res.get("rejection_message", "[Semantic Validation Guardrail] Request Denied: Out of Scope."), None
+                return f"[Semantic Validation Guardrail] {val_res.get('validation_log', 'Query validated within corporate scope.')}", None
+
+        # 2. Universal Out-of-Scope Guardrail Check
+        val_res = semantic_validation(query)
+        if isinstance(val_res, dict) and not val_res.get("is_valid", True):
+            rejection_msg = val_res.get(
                 "rejection_message",
                 "[Semantic Validation Guardrail] Request Denied: Out of Scope. This enterprise decision support system is restricted strictly to organizational data analysis, operational metrics, and predictive forecasting."
             )
             return rejection_msg, None
 
+        # 3. Direct Deep Analytics Mode
+        if "eda" in mode_lower or "analytics" in mode_lower:
+            df_ans = execute_pandas_analysis(
+                "avg_val = df['Transaction_Amount_USD'].mean() if 'Transaction_Amount_USD' in df.columns else df['Revenue_Impact_USD'].mean()\n"
+                "analysis_result = f'Average Transaction Value across {len(df):,} records: ${avg_val:,.2f} USD'"
+            )
+            return df_ans, None
+
+        # 4. Direct Visualization Mode
+        if "visualization" in mode_lower or "viz" in mode_lower:
+            plot_res = generate_plot(
+                "fig, ax = plt.subplots(figsize=(8, 4.5))\n"
+                "sns.barplot(data=df.head(100), x='Department', y='Transaction_Amount_USD', hue='Department', palette='viridis', legend=False, ax=ax)\n"
+                "ax.set_title('Department Operational Transaction Analysis', fontsize=12, fontweight='bold')\n"
+                "plt.tight_layout()\n"
+                "plt.savefig('dashboard_chart.png', dpi=300, bbox_inches='tight')"
+            )
+            chart_path = os.path.join(BASE_DIR, "dashboard_chart.png")
+            return plot_res, (chart_path if os.path.exists(chart_path) else None)
+
+        # 5. Direct Predictive Risk Mode
+        if "predictive" in mode_lower or "risk" in mode_lower or "prediction" in mode_lower:
+            ml_res = execute_ml_model()
+            return f"[Predictive Intelligence Output]\n{ml_res}", None
+
+        # 6. Direct Executive Summary / Consultant Mode
+        if "executive summary" in mode_lower or "consultant" in mode_lower or "summary" in mode_lower:
+            df = load_dataset()
+            avg_val = df['Transaction_Amount_USD'].mean() if 'Transaction_Amount_USD' in df.columns else df['Revenue_Impact_USD'].mean()
+            summary = (
+                f"[Consultant Executive Strategy] Executive Summary Report for '{query}':\n"
+                f"• Operational Volume: {len(df):,} records analyzed across {len(df.columns)} dimensions.\n"
+                f"• Baseline Indicator: Average Transaction Value stands at ${avg_val:,.2f} USD.\n"
+                f"• Strategic Recommendations:\n"
+                f"  1. Automate routing for low-complexity transactions.\n"
+                f"  2. Focus staffing resources on High/Critical SLA breach tickets.\n"
+                f"  3. Deploy Random Forest ML classifier for real-time risk assessment."
+            )
+            return summary, None
+
+        # 7. Default Multi-Agent Orchestrator Mode
         api_key = key_manager.get_active_key()
         if api_key:
             os.environ["GEMINI_API_KEY"] = api_key
@@ -189,13 +240,11 @@ class ADKOrchestratorPipeline:
                     if attempt < max_attempts:
                         continue
 
-        # Dynamic Intent-Based Trapping: If LLM calls timed out or hit API quotas, execute decoupled intent router!
         if not success or not response_texts:
             final_text = generate_dynamic_fallback(query)
             return final_text, None
 
         final_text = "\n\n".join(response_texts)
-        
         new_chart = None
         if os.path.exists(chart_path):
             mtime = os.path.getmtime(chart_path)
@@ -204,9 +253,9 @@ class ADKOrchestratorPipeline:
 
         return final_text, new_chart
 
-    def run_query(self, query: str) -> Tuple[str, str]:
-        """Synchronous wrapper for run_query_async."""
-        return asyncio.run(self.run_query_async(query))
+    def run_query(self, query: str, workflow_mode: str = "Orchestrator") -> Tuple[str, str]:
+        """Synchronous wrapper for run_query_async accepting workflow_mode."""
+        return asyncio.run(self.run_query_async(query, workflow_mode=workflow_mode))
 
 if __name__ == "__main__":
     print("=== Fast ADK AI Data Team Booting Up ===")

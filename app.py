@@ -700,7 +700,7 @@ with chat_tab1:
             with st.spinner("Processing executive query with Google ADK pipeline..."):
                 pipeline = ADKOrchestratorPipeline()
                 try:
-                    ans_text, _ = pipeline.run_query(user_query)
+                    ans_text, _ = pipeline.run_query(user_query, workflow_mode=analysis_type)
                 except Exception as e:
                     ans_text = f"Execution Error: {str(e)}"
             st.markdown(ans_text)

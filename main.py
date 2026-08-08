@@ -17,33 +17,29 @@ def launch_dashboard():
     except KeyboardInterrupt:
         print("\nExecutive Dashboard shutdown cleanly.")
 
-def launch_cli():
-    """Launches the command-line interactive session."""
+def launch_cli(workflow_mode: str = "Orchestrator"):
+    """Launches the command-line interactive session supporting mode-based execution mapping."""
     from coordinator import ADKOrchestratorPipeline, orchestrator_agent
     from utils.config import get_gemini_api_key
 
     print("==================================================================")
     print(" 🧠 STARKTECH MULTI-AGENT AI BUSINESS ANALYST (CLI MODE) 🧠")
     print("==================================================================")
-    print("Orchestrator Model: gemini-1.5-pro")
-    print("Specialist Agents:  gemini-1.5-flash (Semantic, Analytics, Viz, Consultant)")
-    print("Deterministic Doers: Dataset Schema Reader & ML Predictor Tool")
+    print(f"Active Workflow Mode: {workflow_mode}")
+    print("Orchestrator Model: gemini-3.5-flash")
+    print("Specialist Agents:  gemini-3.5-flash (Semantic, Analytics, Viz, Consultant)")
     print("==================================================================")
     print("Type your business query below (or 'exit' / 'quit' to stop).\n")
     
     api_key = get_gemini_api_key()
     if api_key:
         os.environ["GEMINI_API_KEY"] = api_key
-    else:
-        user_key = input("Enter GEMINI_API_KEY (press Enter to skip if set in env): ").strip()
-        if user_key:
-            os.environ["GEMINI_API_KEY"] = user_key
 
     pipeline = ADKOrchestratorPipeline(agent=orchestrator_agent)
     
     while True:
         try:
-            user_query = input("\nBusiness User > ").strip()
+            user_query = input(f"\n[{workflow_mode}] Business User > ").strip()
             if not user_query:
                 continue
                 
@@ -51,11 +47,13 @@ def launch_cli():
                 print("\nShutting down AI Data Team session. Goodbye!")
                 break
                 
-            print("\n⏳ Chief Data Officer orchestrating specialist agents...")
-            response = pipeline.run_query(user_query)
+            print(f"\n⏳ Processing query via '{workflow_mode}' agent pipeline...")
+            res_text, chart = pipeline.run_query(user_query, workflow_mode=workflow_mode)
             
             print("\n------------------------------------------------------------------")
-            print(f"📊 CHIEF DATA OFFICER RESPONSE:\n{response}")
+            print(f"📊 AGENT RESPONSE:\n{res_text}")
+            if chart:
+                print(f"[Generated Chart Saved]: {chart}")
             print("------------------------------------------------------------------")
             
         except KeyboardInterrupt:
@@ -66,8 +64,15 @@ def launch_cli():
             print("Attempting session recovery... Chat session remains active.\n")
 
 def main():
-    if "--cli" in sys.argv:
-        launch_cli()
+    mode = "Orchestrator"
+    if "--semantic" in sys.argv: mode = "Semantic Validation"
+    elif "--analytics" in sys.argv or "--eda" in sys.argv: mode = "Operational EDA"
+    elif "--viz" in sys.argv: mode = "Visualization Generation"
+    elif "--predict" in sys.argv: mode = "Predictive ML Risk"
+    elif "--consultant" in sys.argv: mode = "Executive Summary"
+
+    if "--cli" in sys.argv or mode != "Orchestrator":
+        launch_cli(workflow_mode=mode)
     else:
         launch_dashboard()
 
