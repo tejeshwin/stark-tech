@@ -686,6 +686,11 @@ with chat_tab1:
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
+            chart_path = msg.get("chart")
+            if chart_path and os.path.exists(chart_path):
+                st.image(chart_path, caption="Generated Enterprise Visualization")
+            elif os.path.exists("output_chart.png") and any(k in msg.get("content", "").lower() for k in ["chart", "plot", "graph", "visual"]):
+                st.image("output_chart.png", caption="Generated Enterprise Visualization")
 
     user_query = st.chat_input("Ask an executive business question...")
     if suggested_q:
@@ -700,11 +705,26 @@ with chat_tab1:
             with st.spinner("Processing executive query with Google ADK pipeline..."):
                 pipeline = ADKOrchestratorPipeline()
                 try:
-                    ans_text, _ = pipeline.run_query(user_query, workflow_mode=analysis_type)
+                    ans_text, new_chart = pipeline.run_query(user_query, workflow_mode=analysis_type)
                 except Exception as e:
-                    ans_text = f"Execution Error: {str(e)}"
+                    ans_text, new_chart = f"Execution Error: {str(e)}", None
+                    
             st.markdown(ans_text)
-            st.session_state.messages.append({"role": "assistant", "content": ans_text})
+            
+            if not new_chart:
+                if os.path.exists("output_chart.png"):
+                    new_chart = "output_chart.png"
+                elif os.path.exists("dashboard_chart.png"):
+                    new_chart = "dashboard_chart.png"
+                    
+            if new_chart and os.path.exists(new_chart):
+                st.image(new_chart, caption="Generated Enterprise Visualization")
+                
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": ans_text,
+                "chart": new_chart
+            })
 
 with chat_tab2:
     st.markdown("#### Executive Summary Report")

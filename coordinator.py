@@ -44,7 +44,7 @@ orchestrator_agent = LlmAgent(
     instruction="""You are the Chief Data Officer and Lead AI Business Analyst. You direct an AI data team using strict intent-based conditional routing:
 
 RULE 1 (OUT OF SCOPE): IF the query is out-of-scope (e.g. travel, weather, personal tasks, trivia), route exclusively to 'semantic_agent' for immediate rejection. Do NOT invoke data or prediction tools.
-RULE 2 (VISUALIZATION): IF the query requests charts, graphs, or visual trends, route execution to 'visualization_agent' (or 'generate_plot').
+RULE 2 (VISUALIZATION): IF the query requests charts, graphs, bar charts, or visual trends, route execution to 'visualization_agent' or call 'generate_plot'. The plot MUST be physically saved as output_chart.png.
 RULE 3 (ANALYTICS & KPIS): IF the query requests calculations, numeric aggregations, or KPIs, route execution to 'analytics_agent' (or 'execute_pandas_analysis').
 RULE 4 (PREDICTION & ML): IF the query requests forecasts, risk scoring, or ML predictions, route execution to 'prediction_agent' (or 'execute_ml_model').
 RULE 5 (EXECUTIVE SUMMARY): IF the query requests executive overviews or strategy recommendations, route execution to 'consultant_agent'.
@@ -54,10 +54,10 @@ Never dump schemas or ML predictions unconditionally. Always provide dynamic, co
     sub_agents=[semantic_agent, analytics_agent, visualization_agent, consultant_agent]
 )
 
-def generate_dynamic_fallback(query: str) -> str:
+def generate_dynamic_fallback(query: str) -> Tuple[str, str]:
     """
     Decoupled intent-based dynamic router. Evaluates user input intent
-    and returns targeted, unique analysis without dumping unrequested tools or predictions.
+    and returns targeted, unique analysis with physical output_chart.png path for visualizations.
     """
     try:
         df = load_dataset()
@@ -70,16 +70,29 @@ def generate_dynamic_fallback(query: str) -> str:
             return val_res.get(
                 "rejection_message",
                 "[Semantic Validation Guardrail] Request Denied: Out of Scope. This enterprise decision support system is restricted strictly to organizational data analysis, operational metrics, and predictive forecasting."
-            )
+            ), None
 
         # 2. Prediction / ML Intent Check
         if any(w in query_lower for w in ['predict', 'forecast', 'ml', 'machine learning', 'human review', 'model', 'risk score']):
             ml_res = execute_ml_model()
-            return f"[Predictive Intelligence Output]\n{ml_res}"
+            return f"[Predictive Intelligence Output]\n{ml_res}", None
 
         # 3. Visualization Intent Check
-        if any(w in query_lower for w in ['chart', 'plot', 'graph', 'visual', 'trend', 'distribution']):
-            return f"[Visualization Engine Output] Executive visualization query processed for: '{query}'. Seaborn chart rendered."
+        if any(w in query_lower for w in ['chart', 'plot', 'graph', 'visual', 'trend', 'distribution', 'bar', 'histogram']):
+            plot_res = generate_plot(
+                "fig, ax = plt.subplots(figsize=(8, 4.5))\n"
+                "dept_rev = df.groupby('Department')['Revenue_Impact_USD'].sum().reset_index().sort_values('Revenue_Impact_USD', ascending=False)\n"
+                "bars = sns.barplot(data=dept_rev, x='Department', y='Revenue_Impact_USD', hue='Department', palette='viridis', legend=False, ax=ax)\n"
+                "ax.set_title('Department Total Revenue Impact ($ USD)', fontsize=12, fontweight='bold')\n"
+                "plt.xticks(rotation=25, ha='right')\n"
+                "plt.tight_layout()\n"
+                "plt.savefig('output_chart.png', dpi=300, bbox_inches='tight')\n"
+                "plt.savefig('dashboard_chart.png', dpi=300, bbox_inches='tight')"
+            )
+            out_p = os.path.join(BASE_DIR, "output_chart.png")
+            dash_p = os.path.join(BASE_DIR, "dashboard_chart.png")
+            chart_file = out_p if os.path.exists(out_p) else (dash_p if os.path.exists(dash_p) else None)
+            return plot_res, chart_file
 
         # 4. Specific Column Analytics Intent Check
         words = [w for w in re.findall(r'\w+', query_lower) if len(w) > 2]
@@ -96,23 +109,23 @@ def generate_dynamic_fallback(query: str) -> str:
                     top_vals = df[col].value_counts().head(3).to_dict()
                     val_str = ", ".join([f"{k}: {v:,}" for k, v in top_vals.items()])
                     response_parts.append(f"• **{col} Distribution**: {val_str}")
-            return "\n".join(response_parts)
+            return "\n".join(response_parts), None
 
         # 5. Executive Summary / Strategy Intent Check
         if any(w in query_lower for w in ['summary', 'overview', 'strategy', 'recommend', 'insight', 'kpi', 'schema', 'columns']):
             avg_tx = df['Transaction_Amount_USD'].mean() if 'Transaction_Amount_USD' in df.columns else df['Revenue_Impact_USD'].mean()
-            return f"[Consultant Executive Strategy] Operational Dataset Overview ({len(df):,} records, {len(cols)} dimensions). Average Transaction Value: ${avg_tx:,.2f} USD. Strategic Recommendation: Focus optimization on High-Complexity and SLA breach tasks."
+            return f"[Consultant Executive Strategy] Operational Dataset Overview ({len(df):,} records, {len(cols)} dimensions). Average Transaction Value: ${avg_tx:,.2f} USD. Strategic Recommendation: Focus optimization on High-Complexity and SLA breach tasks.", None
 
         # 6. Default Targeted Analytical Output
         avg_val = df['Transaction_Amount_USD'].mean() if 'Transaction_Amount_USD' in df.columns else df['Revenue_Impact_USD'].mean()
-        return f"[Analytics Engine Output] Analytical response for query '{query}': Average Transaction Amount across {len(df):,} records is ${avg_val:,.2f} USD."
+        return f"[Analytics Engine Output] Analytical response for query '{query}': Average Transaction Amount across {len(df):,} records is ${avg_val:,.2f} USD.", None
 
     except Exception as e:
-        return f"[Chief Data Officer System Output] Error evaluating query intent: {str(e)}"
+        return f"[Chief Data Officer System Output] Error evaluating query intent: {str(e)}", None
 
 class ADKOrchestratorPipeline:
     """
-    High-Performance Google ADK Runner Pipeline supporting isolated mode-based workflow execution.
+    High-Performance Google ADK Runner Pipeline enforcing physical plot file generation.
     """
     def __init__(self, agent: LlmAgent = orchestrator_agent):
         self.agent = agent
@@ -128,7 +141,7 @@ class ADKOrchestratorPipeline:
 
     async def run_query_async(self, query: str, workflow_mode: str = "Orchestrator") -> Tuple[str, str]:
         """
-        Executes query with mode-based agent isolation and semantic guardrail enforcement.
+        Executes query with mode-based agent isolation, physical plot file generation, and semantic guardrail enforcement.
         """
         mode_lower = str(workflow_mode).lower().strip()
         
@@ -158,16 +171,21 @@ class ADKOrchestratorPipeline:
             return df_ans, None
 
         # 4. Direct Visualization Mode
-        if "visualization" in mode_lower or "viz" in mode_lower:
+        if "visualization" in mode_lower or "viz" in mode_lower or any(w in query.lower() for w in ['chart', 'plot', 'graph', 'visual', 'bar']):
             plot_res = generate_plot(
                 "fig, ax = plt.subplots(figsize=(8, 4.5))\n"
-                "sns.barplot(data=df.head(100), x='Department', y='Transaction_Amount_USD', hue='Department', palette='viridis', legend=False, ax=ax)\n"
-                "ax.set_title('Department Operational Transaction Analysis', fontsize=12, fontweight='bold')\n"
+                "dept_rev = df.groupby('Department')['Revenue_Impact_USD'].sum().reset_index().sort_values('Revenue_Impact_USD', ascending=False)\n"
+                "sns.barplot(data=dept_rev, x='Department', y='Revenue_Impact_USD', hue='Department', palette='viridis', legend=False, ax=ax)\n"
+                "ax.set_title('Department Total Revenue Impact ($ USD)', fontsize=12, fontweight='bold')\n"
+                "plt.xticks(rotation=25, ha='right')\n"
                 "plt.tight_layout()\n"
+                "plt.savefig('output_chart.png', dpi=300, bbox_inches='tight')\n"
                 "plt.savefig('dashboard_chart.png', dpi=300, bbox_inches='tight')"
             )
-            chart_path = os.path.join(BASE_DIR, "dashboard_chart.png")
-            return plot_res, (chart_path if os.path.exists(chart_path) else None)
+            out_p = os.path.join(BASE_DIR, "output_chart.png")
+            dash_p = os.path.join(BASE_DIR, "dashboard_chart.png")
+            chart_file = out_p if os.path.exists(out_p) else (dash_p if os.path.exists(dash_p) else None)
+            return plot_res, chart_file
 
         # 5. Direct Predictive Risk Mode
         if "predictive" in mode_lower or "risk" in mode_lower or "prediction" in mode_lower:
@@ -195,12 +213,8 @@ class ADKOrchestratorPipeline:
             os.environ["GEMINI_API_KEY"] = api_key
             os.environ["GOOGLE_API_KEY"] = api_key
 
-        chart_path = os.path.join(BASE_DIR, "dashboard_chart.png")
-        if os.path.exists(chart_path):
-            try:
-                os.remove(chart_path)
-            except Exception:
-                pass
+        out_p = os.path.join(BASE_DIR, "output_chart.png")
+        dash_p = os.path.join(BASE_DIR, "dashboard_chart.png")
 
         start_time = time.time()
         quota_warning = key_manager.record_request_and_check_warning()
@@ -241,15 +255,13 @@ class ADKOrchestratorPipeline:
                         continue
 
         if not success or not response_texts:
-            final_text = generate_dynamic_fallback(query)
-            return final_text, None
+            final_text, new_chart = generate_dynamic_fallback(query)
+            return final_text, new_chart
 
         final_text = "\n\n".join(response_texts)
-        new_chart = None
-        if os.path.exists(chart_path):
-            mtime = os.path.getmtime(chart_path)
-            if mtime >= start_time - 1:
-                new_chart = chart_path
+        new_chart = out_p if os.path.exists(out_p) and os.path.getmtime(out_p) >= start_time - 1 else (
+            dash_p if os.path.exists(dash_p) and os.path.getmtime(dash_p) >= start_time - 1 else None
+        )
 
         return final_text, new_chart
 
