@@ -6,9 +6,9 @@ def launch_dashboard():
     """Launches the Streamlit dashboard using python -m streamlit run app.py."""
     app_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app.py")
     print("==================================================================")
-    print(" 🧠 LAUNCHING STARKTECH MULTI-AGENT EXECUTIVE DASHBOARD 🧠")
+    print(" STARKTECH ENTERPRISE EXECUTIVE DASHBOARD PLATFORM")
     print("==================================================================")
-    print(f"Target App: {app_path}")
+    print(f"Target Application: {app_path}")
     print("Running: python -m streamlit run app.py\n")
     
     cmd = [sys.executable, "-m", "streamlit", "run", app_path]
@@ -23,10 +23,10 @@ def launch_cli(workflow_mode: str = "Orchestrator"):
     from utils.config import get_gemini_api_key
 
     print("==================================================================")
-    print(" 🧠 STARKTECH MULTI-AGENT AI BUSINESS ANALYST (CLI MODE) 🧠")
+    print(" STARKTECH ENTERPRISE DECISION SUPPORT SYSTEM (CLI MODE)")
     print("==================================================================")
     print(f"Active Workflow Mode: {workflow_mode}")
-    print("Orchestrator Model: gemini-3.5-flash")
+    print("Orchestrator Engine: gemini-3.5-flash")
     print("Specialist Agents:  gemini-3.5-flash (Semantic, Analytics, Viz, Consultant)")
     print("==================================================================")
     print("Type your business query below (or 'exit' / 'quit' to stop).\n")
@@ -44,14 +44,14 @@ def launch_cli(workflow_mode: str = "Orchestrator"):
                 continue
                 
             if user_query.lower() in ['exit', 'quit']:
-                print("\nShutting down AI Data Team session. Goodbye!")
+                print("\nShutting down Enterprise Analytics session. Goodbye!")
                 break
                 
-            print(f"\n⏳ Processing query via '{workflow_mode}' agent pipeline...")
+            print(f"\n[Processing] Evaluating query via '{workflow_mode}' pipeline...")
             res_text, chart = pipeline.run_query(user_query, workflow_mode=workflow_mode)
             
             print("\n------------------------------------------------------------------")
-            print(f"📊 AGENT RESPONSE:\n{res_text}")
+            print(f"SYSTEM RESPONSE:\n{res_text}")
             if chart:
                 print(f"[Generated Chart Saved]: {chart}")
             print("------------------------------------------------------------------")
@@ -60,8 +60,8 @@ def launch_cli(workflow_mode: str = "Orchestrator"):
             print("\nSession interrupted. Exiting cleanly.")
             break
         except Exception as e:
-            print(f"\n⚠️ [System Recovery] Terminal caught error: {str(e)}")
-            print("Attempting session recovery... Chat session remains active.\n")
+            print(f"\n[System Recovery] Terminal caught error: {str(e)}")
+            print("Attempting session recovery... Active session maintained.\n")
 
 def main():
     mode = "Orchestrator"

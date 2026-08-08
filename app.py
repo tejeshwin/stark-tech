@@ -41,7 +41,6 @@ from prediction_agent import execute_ml_model
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="StarkTech Enterprise Data Analysis Platform",
-    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -340,38 +339,33 @@ def fetch_dataframe(uploaded_file=None):
             'Requires_Human_Review': [False, True, False, False, True]
         })
 
+# Default analysis mode for backend pipeline
+analysis_type = "Orchestrator"
+
 # -----------------------------------------------------------------------------
 # Sidebar Setup
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("### 🏢 StarkTech Analytics")
+    st.markdown("### StarkTech Analytics")
     st.caption("Enterprise Decision Support System")
     st.divider()
 
-    st.markdown("#### 📥 Data Source")
+    st.markdown("#### Data Source")
     uploaded_file = st.file_uploader("Upload Enterprise CSV", type=["csv"], help="Upload your operational CSV dataset.")
     
     df = fetch_dataframe(uploaded_file)
-    
-    st.markdown("#### 🎯 Analysis Mode")
-    analysis_type = st.radio(
-        "Select Workflow Mode:",
-        ["Executive Dashboard", "Operational EDA", "Predictive ML Risk", "AI Business Analyst"],
-        index=0
-    )
 
     st.divider()
-    with st.expander("⚙️ System Settings"):
+    with st.expander("System Settings"):
         sample_rate = st.slider("Data Processing Cap", min_value=10000, max_value=200000, value=50000, step=10000)
         show_raw_data = st.checkbox("Show Raw Tables by Default", value=False)
         auto_chart_labels = st.checkbox("Auto-Generate Data Labels", value=True)
 
-    with st.expander("ℹ️ About Enterprise System"):
+    with st.expander("About Enterprise System"):
         st.markdown("""
-        **Architecture**: Google ADK & Gemini 3.5
-        **Engine**: Scikit-Learn Random Forest ML
-        **UI Framework**: Streamlit Corporate Theme
-        **Status**: 🟢 Production Ready
+        **Platform**: StarkTech Enterprise Analytics
+        **Engine**: Scikit-Learn Random Forest & Pandas Engine
+        **Status**: Active Production Service
         """)
 
 # -----------------------------------------------------------------------------
@@ -381,7 +375,7 @@ st.markdown("""
 <div class="exec-header">
     <h1>StarkTech Enterprise Data Analysis & Decision Platform</h1>
     <p>Automated Enterprise Intelligence, Multi-Agent Operational Analytics & ML Decision Support</p>
-    <div class="status-pill">🟢 Enterprise Dataset Connected | Cleaned Enterprise Data (200,000 Records)</div>
+    <div class="status-pill">Enterprise Dataset Connected | Cleaned Operational Data (200,000 Records)</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -404,16 +398,16 @@ with col_kpi1:
     <div class="kpi-card">
         <div class="kpi-label">Total Dataset Rows</div>
         <div class="kpi-value">{total_rows:,}</div>
-        <div class="kpi-subtext">✓ 100% Records Loaded</div>
+        <div class="kpi-subtext">100% Records Loaded</div>
     </div>
     """, unsafe_allow_html=True)
 
 with col_kpi2:
     st.markdown(f"""
     <div class="kpi-card">
-        <div class="kpi-label">Feature Dimensions</div>
+        <div class="kpi-label">Total Dataset Columns</div>
         <div class="kpi-value">{total_cols}</div>
-        <div class="kpi-subtext">Categorical & Numerical</div>
+        <div class="kpi-subtext">Verified Dimensions</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -440,7 +434,7 @@ st.write("")
 # -----------------------------------------------------------------------------
 # Dataset Preview Expandable Container
 # -----------------------------------------------------------------------------
-with st.expander("📁 Enterprise Dataset Preview & Schema Inspector", expanded=False):
+with st.expander("Enterprise Dataset Preview & Schema Inspector", expanded=False):
     st.markdown("##### Raw Dataset Sample (First 100 Records)")
     st.dataframe(df.head(100), width="stretch", height=280)
     
@@ -459,7 +453,7 @@ st.write("")
 # -----------------------------------------------------------------------------
 # Multi-Agent Analysis Progress Section
 # -----------------------------------------------------------------------------
-st.markdown("### ⚙️ Automated Pipeline Execution Status")
+st.markdown("### Automated Pipeline Execution Status")
 
 col_p1, col_p2, col_p3, col_p4 = st.columns(4)
 
@@ -467,7 +461,6 @@ with col_p1:
     st.markdown("""
     <div class="agent-status-box">
         <div>
-            <div style="font-size: 1.2rem; margin-bottom: 0.2rem;">🧹</div>
             <div class="agent-title">Data Cleaning</div>
         </div>
         <span class="badge-complete">Complete (100%)</span>
@@ -478,7 +471,6 @@ with col_p2:
     st.markdown("""
     <div class="agent-status-box">
         <div>
-            <div style="font-size: 1.2rem; margin-bottom: 0.2rem;">📊</div>
             <div class="agent-title">EDA Analytics</div>
         </div>
         <span class="badge-complete">Complete (37 Dimensions)</span>
@@ -489,7 +481,6 @@ with col_p3:
     st.markdown("""
     <div class="agent-status-box">
         <div>
-            <div style="font-size: 1.2rem; margin-bottom: 0.2rem;">🎨</div>
             <div class="agent-title">Visualization Engine</div>
         </div>
         <span class="badge-active">Active & Rendered</span>
@@ -500,7 +491,6 @@ with col_p4:
     st.markdown("""
     <div class="agent-status-box">
         <div>
-            <div style="font-size: 1.2rem; margin-bottom: 0.2rem;">📄</div>
             <div class="agent-title">Report Generation</div>
         </div>
         <span class="badge-complete">Ready for Export</span>
@@ -512,7 +502,7 @@ st.divider()
 # -----------------------------------------------------------------------------
 # Generated Visualizations & Analysis Section
 # -----------------------------------------------------------------------------
-st.markdown("### 📈 Generated Executive Visualizations")
+st.markdown("### Generated Executive Visualizations")
 
 plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
 corporate_colors = ['#1E3A8A', '#0D9488', '#475569', '#059669', '#E11D48', '#D97706']
@@ -658,12 +648,12 @@ with col_v4:
 st.divider()
 
 # -----------------------------------------------------------------------------
-# AI Business Analyst & Executive Query Interface
+# Enterprise Query & Decision Support Interface
 # -----------------------------------------------------------------------------
-st.markdown("### 💬 Executive Query & AI Decision Assistant")
-st.caption("Ask operational questions or request custom quantitative aggregations powered by Google ADK.")
+st.markdown("### Executive Query & Decision Support Interface")
+st.caption("Submit operational queries or request quantitative data calculations.")
 
-chat_tab1, chat_tab2 = st.tabs(["💬 Interactive Executive Assistant", "📑 Pre-Generated Business Report"])
+chat_tab1, chat_tab2 = st.tabs(["Interactive Decision Support", "Executive Summary Report"])
 
 with chat_tab1:
     if "messages" not in st.session_state:
@@ -673,13 +663,13 @@ with chat_tab1:
     q_col1, q_col2, q_col3 = st.columns(3)
     suggested_q = None
     with q_col1:
-        if st.button("📊 Revenue Impact by Department"):
+        if st.button("Revenue Impact by Department"):
             suggested_q = "Calculate total revenue impact by department and summarize findings."
     with q_col2:
-        if st.button("⚠️ SLA Breach Risk Analysis"):
+        if st.button("SLA Breach Risk Analysis"):
             suggested_q = "Break down SLA breaches by priority level and compute breach percentage."
     with q_col3:
-        if st.button("🔮 Human Review Risk ML Predictions"):
+        if st.button("Human Review Risk Predictions"):
             suggested_q = "Run the Random Forest ML predictor for human review requirements."
 
     # Render History
@@ -700,7 +690,7 @@ with chat_tab1:
             st.markdown(user_query)
 
         with st.chat_message("assistant"):
-            with st.spinner("Processing executive query with Google ADK pipeline..."):
+            with st.spinner("Processing executive query..."):
                 pipeline = ADKOrchestratorPipeline()
                 try:
                     ans_text, new_chart = pipeline.run_query(user_query, workflow_mode=analysis_type)
@@ -732,63 +722,32 @@ with chat_tab2:
 
 st.divider()
 
-# -----------------------------------------------------------------------------
-# Bottom Downloads Section
-# -----------------------------------------------------------------------------
-st.markdown("### 📥 Export & Download Center")
-st.caption("Download cleaned data, generated charts, and executive PDF reports for offline presentation.")
+# Export & Download Section
+st.markdown("### Executive Data Export Center")
+ex_col1, ex_col2 = st.columns(2)
 
-d_col1, d_col2, d_col3 = st.columns(3)
-
-with d_col1:
-    report_text = f"""
-==================================================================
- STARKTECH ENTERPRISE DECISION SUPPORT REPORT
- Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}
-==================================================================
-
-1. DATASET METRICS:
-   - Total Rows: {len(df):,}
-   - Total Columns: {len(df.columns)}
-   - Data Quality Score: {quality_score:.1f}%
-
-2. EXECUTIVE SUMMARY:
-   - Total Enterprise Revenue Impact: $3.34 Billion USD
-   - Average Transaction Value: $16,684.36 USD
-   - SLA Breach Compliance Rate: 85.8% (14.2% Breach Rate)
-   - Machine Learning Review Classifier Accuracy: 100.0%
-
-3. RECOMMENDED ACTIONS:
-   - Prioritize SLA reduction for High/Critical tickets.
-   - Deploy Random Forest ML model for automated routing.
-==================================================================
-    """
+with ex_col1:
+    csv_data = df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="📄 Download Executive Report (.txt / PDF)",
-        data=report_text.encode("utf-8"),
-        file_name="StarkTech_Executive_Report.txt",
-        mime="text/plain",
-        width="stretch"
-    )
-
-with d_col2:
-    csv_buffer = io.BytesIO()
-    df.head(5000).to_csv(csv_buffer, index=False)
-    st.download_button(
-        label="📊 Download Cleaned Dataset (.csv)",
-        data=csv_buffer.getvalue(),
-        file_name="cleaned_enterprise_data_sample.csv",
+        label="Download Operational Dataset (CSV)",
+        data=csv_data,
+        file_name="starktech_operational_dataset.csv",
         mime="text/csv",
         width="stretch"
     )
 
-with d_col3:
-    fig_buffer = io.BytesIO()
-    fig1.savefig(fig_buffer, format='png', dpi=200, bbox_inches='tight')
+with ex_col2:
+    summary_report = f"""STARKTECH ENTERPRISE DECISION REPORT
+Date: {time.strftime('%Y-%m-%d %H:%M:%S')}
+Total Records: {len(df):,}
+Total Revenue Impact: ${df['Revenue_Impact_USD'].sum() if 'Revenue_Impact_USD' in df.columns else 0:,.2f} USD
+SLA Breach Rate: {(df['SLA_Breached'].sum()/len(df)*100) if 'SLA_Breached' in df.columns else 0:.2f}%
+Status: Verified Enterprise Dataset
+"""
     st.download_button(
-        label="📈 Download Revenue Chart (.png)",
-        data=fig_buffer.getvalue(),
-        file_name="revenue_impact_department_chart.png",
-        mime="image/png",
+        label="Download Executive Summary (TXT)",
+        data=summary_report,
+        file_name="executive_summary_report.txt",
+        mime="text/plain",
         width="stretch"
     )
