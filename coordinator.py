@@ -31,24 +31,24 @@ from data_agent import get_dataset_schema
 from prediction_agent import execute_ml_model
 from analytics_agent import execute_pandas_analysis
 from visualization_agent import generate_plot
+from semantic_agent import semantic_agent, semantic_validation
 
-# Streamlined High-Performance Orchestrator Agent powered by Google ADK (gemini-3.5-flash)
+# Chief Data Officer Orchestrator Agent with Guardrail Enforcement (gemini-3.5-flash)
 orchestrator_agent = LlmAgent(
     name="ChiefDataOfficer",
     model="gemini-3.5-flash",
     description="Primary manager, Chief Data Officer, and multi-agent business analyst.",
-    instruction="""You are the Chief Data Officer and Lead AI Business Analyst. Respond rapidly and directly to business queries:
-1. Use 'get_dataset_schema' to inspect dataset structure if column names are needed.
-2. Use 'execute_pandas_analysis' to write Python pandas code to crunch metrics.
-3. Use 'execute_ml_model' for machine learning forecasts, SLA risk predictions, or human review scores.
-4. Use 'generate_plot' to create colorful, detailed executive Seaborn/Matplotlib charts with data labels and explicit titles.
-Be fast, concise, quantitative, and deliver C-suite executive conclusions with numerical citations.""",
-    tools=[get_dataset_schema, execute_ml_model, execute_pandas_analysis, generate_plot]
+    instruction="""You are the Chief Data Officer and Lead AI Business Analyst. You enforce strict operational scope guardrails:
+Step 1: ALWAYS route the user query to the `semantic_agent` (or `semantic_validation`) first to validate whether the question is within corporate data scope.
+Step 2: If the semantic agent flags the query as out-of-scope or unauthorized, immediately halt the pipeline and return its rejection response: 'Request Denied: Out of Scope. This enterprise decision support system is restricted strictly to organizational data analysis, operational metrics, and predictive forecasting.' Do not call data or prediction tools for invalid queries.
+Step 3: For valid corporate data queries, use 'get_dataset_schema', 'execute_pandas_analysis', 'execute_ml_model', or 'generate_plot' to deliver quantitative, executive conclusions.""",
+    tools=[semantic_validation, get_dataset_schema, execute_ml_model, execute_pandas_analysis, generate_plot],
+    sub_agents=[semantic_agent]
 )
 
 class ADKOrchestratorPipeline:
     """
-    High-Performance Google ADK Runner Pipeline for fast, responsive multi-agent workflows.
+    High-Performance Google ADK Runner Pipeline enforcing strict semantic validation guardrails.
     """
     def __init__(self, agent: LlmAgent = orchestrator_agent):
         self.agent = agent
@@ -64,9 +64,18 @@ class ADKOrchestratorPipeline:
 
     async def run_query_async(self, query: str) -> Tuple[str, str]:
         """
-        Executes query rapidly with automatic key rotation, token quota warnings, and chart detection.
+        Executes query with mandatory semantic validation guardrail check BEFORE analytical execution.
         Returns tuple: (response_text, generated_chart_path_or_None)
         """
+        # Step 1: Mandatory Guardrail Check BEFORE any data analysis or tool execution
+        validation_res = semantic_validation(query)
+        if isinstance(validation_res, dict) and not validation_res.get("is_valid", True):
+            rejection_msg = validation_res.get(
+                "rejection_message",
+                "Request Denied: Out of Scope. This enterprise decision support system is restricted strictly to organizational data analysis, operational metrics, and predictive forecasting."
+            )
+            return rejection_msg, None
+
         api_key = key_manager.get_active_key()
         if api_key:
             os.environ["GEMINI_API_KEY"] = api_key
