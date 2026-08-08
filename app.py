@@ -47,7 +47,7 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# Production Corporate CSS (Tableau / Power BI / Microsoft Fabric Style)
+# Production Corporate CSS with High-Contrast Text & Box Visibility
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -64,16 +64,97 @@ st.markdown("""
         color: #0f172a;
     }
 
-    /* Sidebar Styling */
+    /* Universal High-Contrast Text Rules */
+    p, label, span, div, h1, h2, h3, h4, h5, h6, li, td, th {
+        color: #0f172a !important;
+    }
+
+    /* Sidebar Styling & Visibility */
     section[data-testid="stSidebar"] {
         background-color: #ffffff !important;
         border-right: 1px solid #e2e8f0;
     }
-    
+    section[data-testid="stSidebar"] * {
+        color: #0f172a !important;
+    }
     section[data-testid="stSidebar"] .stMarkdown h1, 
     section[data-testid="stSidebar"] .stMarkdown h2, 
     section[data-testid="stSidebar"] .stMarkdown h3 {
-        color: #1e3a8a;
+        color: #1e3a8a !important;
+    }
+
+    /* Form Inputs, Textboxes & Dropdowns Visibility */
+    input, textarea, select {
+        color: #0f172a !important;
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+    
+    div[data-baseweb="input"] input, 
+    div[data-baseweb="textarea"] textarea,
+    div[data-baseweb="select"] div {
+        color: #0f172a !important;
+        background-color: #ffffff !important;
+    }
+
+    div[data-baseweb="select"] > div {
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        background-color: #ffffff !important;
+    }
+
+    /* Dropdown menu items visibility */
+    ul[role="listbox"], div[role="option"], li[role="option"] {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+    }
+    ul[role="listbox"] li:hover, div[role="option"]:hover {
+        background-color: #e2e8f0 !important;
+        color: #1e3a8a !important;
+    }
+
+    /* Radio Buttons & Checkboxes Visibility */
+    div[data-testid="stRadio"] label p,
+    div[data-testid="stCheckbox"] label p {
+        color: #0f172a !important;
+        font-weight: 500;
+    }
+
+    /* Chat Input & Messages Visibility */
+    [data-testid="stChatMessage"] {
+        background-color: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        color: #0f172a !important;
+    }
+    [data-testid="stChatMessage"] * {
+        color: #0f172a !important;
+    }
+    
+    .stChatInput textarea {
+        color: #0f172a !important;
+        background-color: #ffffff !important;
+    }
+
+    /* File Uploader Container */
+    div[data-testid="stFileUploader"] {
+        background-color: #f1f5f9 !important;
+        border: 1px dashed #94a3b8 !important;
+        border-radius: 8px !important;
+        padding: 0.75rem !important;
+    }
+    div[data-testid="stFileUploader"] * {
+        color: #0f172a !important;
+    }
+
+    /* Expander Container Visibility */
+    .stExpander {
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+    }
+    .stExpander * {
+        color: #0f172a !important;
     }
 
     /* Executive Header Banner */
@@ -87,21 +168,21 @@ st.markdown("""
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     .exec-header h1 {
-        color: #0f172a;
+        color: #0f172a !important;
         font-size: 1.8rem;
         font-weight: 700;
         margin: 0;
         letter-spacing: -0.5px;
     }
     .exec-header p {
-        color: #64748b;
+        color: #475569 !important;
         font-size: 0.95rem;
         margin: 0.3rem 0 0 0;
     }
     .status-pill {
         display: inline-block;
         background-color: #f0fdf4;
-        color: #166534;
+        color: #166534 !important;
         border: 1px solid #bbf7d0;
         font-size: 0.8rem;
         font-weight: 600;
@@ -124,7 +205,7 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
     .kpi-label {
-        color: #64748b;
+        color: #64748b !important;
         font-size: 0.8rem;
         font-weight: 600;
         text-transform: uppercase;
@@ -132,13 +213,13 @@ st.markdown("""
         margin-bottom: 0.3rem;
     }
     .kpi-value {
-        color: #1e3a8a;
+        color: #1e3a8a !important;
         font-size: 1.8rem;
         font-weight: 700;
         margin: 0;
     }
     .kpi-subtext {
-        color: #059669;
+        color: #059669 !important;
         font-size: 0.8rem;
         font-weight: 500;
         margin-top: 0.3rem;
@@ -158,11 +239,11 @@ st.markdown("""
     .agent-title {
         font-weight: 600;
         font-size: 0.95rem;
-        color: #1e293b;
+        color: #1e293b !important;
     }
     .badge-complete {
         background: #dcfce7;
-        color: #15803d;
+        color: #15803d !important;
         font-size: 0.75rem;
         font-weight: 600;
         padding: 0.2rem 0.6rem;
@@ -170,7 +251,7 @@ st.markdown("""
     }
     .badge-active {
         background: #dbeafe;
-        color: #1d4ed8;
+        color: #1d4ed8 !important;
         font-size: 0.75rem;
         font-weight: 600;
         padding: 0.2rem 0.6rem;
@@ -189,7 +270,7 @@ st.markdown("""
     .chart-header {
         font-size: 1.05rem;
         font-weight: 600;
-        color: #1e3a8a;
+        color: #1e3a8a !important;
         margin-bottom: 0.8rem;
         border-bottom: 1px solid #f1f5f9;
         padding-bottom: 0.5rem;
@@ -197,16 +278,19 @@ st.markdown("""
 
     /* Custom Buttons Styling */
     .stButton>button {
-        background-color: #1e3a8a;
-        color: #ffffff;
+        background-color: #1e3a8a !important;
+        color: #ffffff !important;
         border-radius: 6px;
         font-weight: 600;
         border: none;
         padding: 0.5rem 1rem;
         transition: all 0.15s ease;
     }
+    .stButton>button * {
+        color: #ffffff !important;
+    }
     .stButton>button:hover {
-        background-color: #1e40af;
+        background-color: #1e40af !important;
         box-shadow: 0 2px 6px rgba(30, 58, 138, 0.25);
     }
 
@@ -221,13 +305,16 @@ st.markdown("""
         border-radius: 6px 6px 0 0;
         border: 1px solid #e2e8f0;
         border-bottom: none;
-        color: #64748b;
+        color: #64748b !important;
         font-weight: 500;
     }
     .stTabs [aria-selected="true"] {
         background-color: #1e3a8a !important;
         color: #ffffff !important;
         font-weight: 600;
+    }
+    .stTabs [aria-selected="true"] * {
+        color: #ffffff !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -242,7 +329,6 @@ def fetch_dataframe(uploaded_file=None):
     try:
         return load_dataset()
     except Exception:
-        # Fallback dummy corporate dataframe if file missing
         return pd.DataFrame({
             'Department': ['Finance', 'IT', 'Operations', 'Customer Support', 'Supply Chain'],
             'Transaction_Amount_USD': [15000, 24000, 18500, 9200, 31000],
@@ -344,7 +430,7 @@ with col_kpi4:
     st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-label">Data Quality Score</div>
-        <div class="kpi-value" style="color: #059669;">{quality_score:.1f}%</div>
+        <div class="kpi-value" style="color: #059669 !important;">{quality_score:.1f}%</div>
         <div class="kpi-subtext">Verified Enterprise Grade</div>
     </div>
     """, unsafe_allow_html=True)
@@ -356,7 +442,7 @@ st.write("")
 # -----------------------------------------------------------------------------
 with st.expander("📁 Enterprise Dataset Preview & Schema Inspector", expanded=False):
     st.markdown("##### Raw Dataset Sample (First 100 Records)")
-    st.dataframe(df.head(100), use_container_width=True, height=280)
+    st.dataframe(df.head(100), width="stretch", height=280)
     
     st.markdown("##### Schema & Data Types Breakdown")
     schema_df = pd.DataFrame({
@@ -366,7 +452,7 @@ with st.expander("📁 Enterprise Dataset Preview & Schema Inspector", expanded=
         "Missing Count": [df[c].isnull().sum() for c in df.columns],
         "Sample Value": [str(df[c].iloc[0]) if len(df) > 0 else "" for c in df.columns]
     })
-    st.dataframe(schema_df, use_container_width=True, height=220)
+    st.dataframe(schema_df, width="stretch", height=220)
 
 st.write("")
 
@@ -428,7 +514,6 @@ st.divider()
 # -----------------------------------------------------------------------------
 st.markdown("### 📈 Generated Executive Visualizations")
 
-# Corporate Color Palette Setup (Dark Blue, Teal, Slate, Emerald, Coral)
 plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
 corporate_colors = ['#1E3A8A', '#0D9488', '#475569', '#059669', '#E11D48', '#D97706']
 
@@ -525,7 +610,7 @@ with col_v3:
             x='Query_Complexity_Score',
             y='Processing_Time_Sec',
             hue='SLA_Breached' if 'SLA_Breached' in df.columns else None,
-            palette=['#0D9488', '#E11D48'] if 'SLA_Breached' in df.columns else None,
+            palette=['#0D9488', '#E11D48'] if 'SLA_Breached' in df.columns and len(sample_plot['SLA_Breached'].unique()) > 1 else None,
             alpha=0.65,
             s=30,
             ax=ax3
@@ -670,7 +755,7 @@ with d_col1:
         data=report_text.encode("utf-8"),
         file_name="StarkTech_Executive_Report.txt",
         mime="text/plain",
-        use_container_width=True
+        width="stretch"
     )
 
 with d_col2:
@@ -681,11 +766,10 @@ with d_col2:
         data=csv_buffer.getvalue(),
         file_name="cleaned_enterprise_data_sample.csv",
         mime="text/csv",
-        use_container_width=True
+        width="stretch"
     )
 
 with d_col3:
-    # Save active chart to buffer
     fig_buffer = io.BytesIO()
     fig1.savefig(fig_buffer, format='png', dpi=200, bbox_inches='tight')
     st.download_button(
@@ -693,5 +777,5 @@ with d_col3:
         data=fig_buffer.getvalue(),
         file_name="revenue_impact_department_chart.png",
         mime="image/png",
-        use_container_width=True
+        width="stretch"
     )
