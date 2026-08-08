@@ -29,7 +29,7 @@ def train_and_save_ml_models():
     X = df[feature_cols].copy().fillna(df[feature_cols].median())
     y = df[target_col].copy().fillna(df[target_col].median())
     
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_test_size=0.2, random_state=42) if hasattr(train_test_split, 'test_size') else train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) if hasattr(train_test_split, 'test_size') else train_test_split(X, y, test_size=0.2, random_state=42)
     
     revenue_model = RandomForestRegressor(n_estimators=50, random_state=42)
     revenue_model.fit(X_train, y_train)
