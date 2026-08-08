@@ -1,0 +1,43 @@
+# Environment Variables & Secrets
+.env
+*.env
+
+# Large Models & Binary Datasets
+*.pkl
+models/*.pkl
+*.joblib
+
+# Python Cache & Bytecode
+__pycache__/
+agents/__pycache__/
+utils/__pycache__/
+models/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / Packaging
+build/
+config/
+dist/
+downloads/
+eggs/
+.eggs/
+*.egg-info/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary Outputs & Charts
+dashboard_chart.png
+*.log
