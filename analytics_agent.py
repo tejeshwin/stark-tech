@@ -25,17 +25,15 @@ def execute_pandas_analysis(python_code: str) -> str:
         exec(python_code, {}, local_vars)
         result = local_vars.get('analysis_result')
         if result is None:
-            return "Code ran successfully, but 'analysis_result' was not assigned."
-        return str(result)
+            return "[Analytics Engine Output] Code executed successfully, but 'analysis_result' variable was not set."
+        return f"[Analytics Engine Output] {str(result)}"
     except Exception as e:
-        return f"Code execution crashed. Error details: {str(e)}. Fix the code and retry."
+        return f"[Analytics Engine Output] pandas code error: {str(e)}"
 
 analytics_agent = LlmAgent(
     name="AnalyticsAgent",
     model="gemini-3.5-flash",
-    description="Business Analysis & KPI Specialist",
-    instruction="""You are the Analytics Agent (Math Engine).
-    Use the execute_pandas_analysis tool to write and run Python code to crunch numbers.
-    Always assume the dataframe is pre-loaded as 'df'. Assign your final answer to 'analysis_result'.""",
+    description="Business Analysis & KPI Quantitative Specialist",
+    instruction="""You are the Analytics Agent (Quantitative Engine). Your role is to write Python pandas code using 'execute_pandas_analysis' to compute exact numeric aggregations. Always prefix your analytical findings with '[Analytics Engine Output]'.""",
     tools=[execute_pandas_analysis]
 )

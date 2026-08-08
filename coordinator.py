@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import asyncio
+import pandas as pd
 from typing import Generator, Dict, Any, Tuple
 from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
@@ -29,26 +30,68 @@ if _key:
 
 from data_agent import get_dataset_schema
 from prediction_agent import execute_ml_model
-from analytics_agent import execute_pandas_analysis
-from visualization_agent import generate_plot
+from analytics_agent import analytics_agent, execute_pandas_analysis
+from visualization_agent import visualization_agent, generate_plot
+from consultant_agent import consultant_agent
 from semantic_agent import semantic_agent, semantic_validation
 
-# Chief Data Officer Orchestrator Agent with Guardrail Enforcement (gemini-3.5-flash)
+# Chief Data Officer Orchestrator Agent with Dynamic Fallback & Safety Guardrails (gemini-3.5-flash)
 orchestrator_agent = LlmAgent(
     name="ChiefDataOfficer",
     model="gemini-3.5-flash",
     description="Primary manager, Chief Data Officer, and multi-agent business analyst.",
     instruction="""You are the Chief Data Officer and Lead AI Business Analyst. You enforce strict operational scope guardrails:
 Step 1: ALWAYS route the user query to the `semantic_agent` (or `semantic_validation`) first to validate whether the question is within corporate data scope.
-Step 2: If the semantic agent flags the query as out-of-scope or unauthorized, immediately halt the pipeline and return its rejection response: 'Request Denied: Out of Scope. This enterprise decision support system is restricted strictly to organizational data analysis, operational metrics, and predictive forecasting.' Do not call data or prediction tools for invalid queries.
-Step 3: For valid corporate data queries, use 'get_dataset_schema', 'execute_pandas_analysis', 'execute_ml_model', or 'generate_plot' to deliver quantitative, executive conclusions.""",
+Step 2: If the semantic agent flags the query as out-of-scope or unauthorized, immediately halt the pipeline and return its rejection response: '[Semantic Validation Guardrail] Request Denied: Out of Scope. This enterprise decision support system is restricted strictly to organizational data analysis, operational metrics, and predictive forecasting.' Do not call data or prediction tools for invalid queries.
+Step 3: If a user query is unusual, complex, or does not match standard keywords, do NOT default to a generic or repetitive fallback message. Instead, invoke the `semantic_agent` to evaluate intent, or return a dynamic explanation stating why the request cannot be fulfilled based on current enterprise schema boundaries.
+Step 4: For valid corporate data queries, use 'get_dataset_schema', 'execute_pandas_analysis', 'execute_ml_model', or 'generate_plot' to deliver quantitative, executive conclusions.""",
     tools=[semantic_validation, get_dataset_schema, execute_ml_model, execute_pandas_analysis, generate_plot],
-    sub_agents=[semantic_agent]
+    sub_agents=[semantic_agent, analytics_agent, visualization_agent, consultant_agent]
 )
+
+def generate_dynamic_fallback(query: str) -> str:
+    """
+    Generates a dynamic, context-aware response based on the user's specific query
+    and the actual enterprise dataset schema when LLM quota or runtime limits are reached.
+    """
+    try:
+        df = load_dataset()
+        query_lower = query.lower()
+        cols = df.columns.tolist()
+        
+        matching_cols = [c for c in cols if any(word in c.lower() for word in query_lower.split())]
+        
+        response_parts = [f"**[Chief Data Officer Dynamic Analysis]** for query: *\"{query}\"*"]
+        
+        if matching_cols:
+            response_parts.append(f"• Identified relevant dataset fields: `{', '.join(matching_cols)}`")
+            for col in matching_cols[:2]:
+                if pd.api.types.is_numeric_dtype(df[col]):
+                    avg_val = df[col].mean()
+                    sum_val = df[col].sum()
+                    response_parts.append(f"  - **{col}**: Average = `{avg_val:,.2f}`, Total = `{sum_val:,.2f}`")
+                elif pd.api.types.is_object_dtype(df[col]) or pd.api.types.is_categorical_dtype(df[col]):
+                    top_vals = df[col].value_counts().head(3).to_dict()
+                    val_str = ", ".join([f"{k}: {v:,}" for k, v in top_vals.items()])
+                    response_parts.append(f"  - **{col} Top Distribution**: {val_str}")
+        else:
+            avg_amount = df['Transaction_Amount_USD'].mean() if 'Transaction_Amount_USD' in df.columns else df['Revenue_Impact_USD'].mean()
+            records_count = len(df)
+            response_parts.append(
+                f"• The dataset contains **{records_count:,} operational records** across **{len(cols)} dimensions**.\n"
+                f"• Key Baseline Metric (Average Transaction Amount): **${avg_amount:,.2f} USD**.\n"
+                f"• Query attributes were evaluated against enterprise schema dimensions: `{', '.join(cols[:8])}...`"
+            )
+            
+        ml_res = execute_ml_model()
+        response_parts.append(f"\n**Predictive Intelligence Output**:\n{ml_res}")
+        return "\n".join(response_parts)
+    except Exception as e:
+        return f"[Chief Data Officer System Fallback] Unable to parse query metrics due to error: {str(e)}"
 
 class ADKOrchestratorPipeline:
     """
-    High-Performance Google ADK Runner Pipeline enforcing strict semantic validation guardrails.
+    High-Performance Google ADK Runner Pipeline enforcing strict semantic validation & dynamic fallback trapping.
     """
     def __init__(self, agent: LlmAgent = orchestrator_agent):
         self.agent = agent
@@ -65,14 +108,14 @@ class ADKOrchestratorPipeline:
     async def run_query_async(self, query: str) -> Tuple[str, str]:
         """
         Executes query with mandatory semantic validation guardrail check BEFORE analytical execution.
-        Returns tuple: (response_text, generated_chart_path_or_None)
+        Traps errors dynamically to ensure no repetitive or generic fallback strings occur.
         """
         # Step 1: Mandatory Guardrail Check BEFORE any data analysis or tool execution
         validation_res = semantic_validation(query)
         if isinstance(validation_res, dict) and not validation_res.get("is_valid", True):
             rejection_msg = validation_res.get(
                 "rejection_message",
-                "Request Denied: Out of Scope. This enterprise decision support system is restricted strictly to organizational data analysis, operational metrics, and predictive forecasting."
+                "[Semantic Validation Guardrail] Request Denied: Out of Scope. This enterprise decision support system is restricted strictly to organizational data analysis, operational metrics, and predictive forecasting."
             )
             return rejection_msg, None
 
@@ -126,17 +169,9 @@ class ADKOrchestratorPipeline:
                     if attempt < max_attempts:
                         continue
 
+        # Dynamic Error Trapping: If LLM calls timed out or hit API quotas, return dynamic context-aware response!
         if not success or not response_texts:
-            df_analysis = execute_pandas_analysis(
-                "avg_val = df['Transaction_Amount_USD'].mean() if 'Transaction_Amount_USD' in df.columns else df['Revenue_Impact_USD'].mean()\n"
-                "analysis_result = f'Average Transaction Amount: ${avg_val:,.2f} USD'"
-            )
-            ml_res = execute_ml_model()
-            final_text = (
-                f"[Fast Direct Execution Response]\n\n"
-                f"Analytics Result: {df_analysis}\n\n"
-                f"ML Prediction: {ml_res}"
-            )
+            final_text = generate_dynamic_fallback(query)
             return final_text, None
 
         final_text = "\n\n".join(response_texts)
