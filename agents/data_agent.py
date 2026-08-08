@@ -2,42 +2,42 @@ import os
 import sys
 import pandas as pd
 
+# Automatically resolve paths for robustness
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-try:
-    from utils.config import get_dataset_path
-except ImportError:
-    def get_dataset_path():
-        candidates = [
-            "data/cleaned_enterprise_data_final.csv",
-            "cleaned_enterprise_data.csv",
-            "data/cleaned_enterprise_data.csv"
-        ]
-        for c in candidates:
-            if os.path.exists(c):
-                return c
-        return "cleaned_enterprise_data.csv"
 
-def get_dataset_schema(file_path: str = "cleaned_enterprise_data.csv") -> str:
+def load_enterprise_data() -> pd.DataFrame:
     """
-    Pure Python deterministic tool (No AI Model).
-    Reads the CSV file via Pandas and returns column names, data types, and row count as a string.
+    Directly loads the cleaned enterprise CSV dataset into a Pandas DataFrame.
     """
+    candidates = [
+        "data/cleaned_enterprise_data_final.csv",
+        "cleaned_enterprise_data.csv",
+        "data/cleaned_enterprise_data.csv"
+    ]
+    
+    target_path = "cleaned_enterprise_data.csv"
+    for c in candidates:
+        if os.path.exists(c):
+            target_path = c
+            break
+            
     try:
-        target_path = file_path if os.path.exists(file_path) else get_dataset_path()
         df = pd.read_csv(target_path)
-        schema_info = f"--- ENTERPRISE DATASET SCHEMA ---\n"
-        schema_info += f"File Path: {os.path.basename(target_path)}\n"
-        schema_info += f"Total Records: {len(df):,} rows, {len(df.columns)} columns\n\n"
-        schema_info += "Columns & Data Types:\n"
-        for col, dtype in df.dtypes.items():
-            null_cnt = df[col].isnull().sum()
-            sample_val = str(df[col].dropna().iloc[0]) if not df[col].dropna().empty else "N/A"
-            if len(sample_val) > 35:
-                sample_val = sample_val[:32] + "..."
-            schema_info += f"- {col} ({dtype}) | Missing: {null_cnt} | Sample: {sample_val}\n"
-        return schema_info
+        return df
     except Exception as e:
-        return f"Error reading dataset schema: {str(e)}"
+        # Return an empty DataFrame or raise a clean error if loading fails
+        raise RuntimeError(f"Critical Error: Failed to load enterprise dataset from {target_path}. Details: {str(e)}")
+
+# Initialize the global dataframe instance for the data agent to use directly
+try:
+    enterprise_df = load_enterprise_data()
+    DATA_LOAD_STATUS = f"Success: Loaded {len(enterprise_df):,} rows and {len(enterprise_df.columns)} columns."
+except Exception as e:
+    enterprise_df = pd.DataFrame()
+    DATA_LOAD_STATUS = str(e)
 
 if __name__ == "__main__":
-    print(get_dataset_schema())
+    print(DATA_LOAD_STATUS)
+    if not enterprise_df.empty:
+        print("\nFirst 3 rows of direct dataset preview:")
+        print(enterprise_df.head(3))

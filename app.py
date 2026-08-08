@@ -689,8 +689,6 @@ with chat_tab1:
             chart_path = msg.get("chart")
             if chart_path and os.path.exists(chart_path):
                 st.image(chart_path, caption="Generated Enterprise Visualization")
-            elif os.path.exists("output_chart.png") and any(k in msg.get("content", "").lower() for k in ["chart", "plot", "graph", "visual"]):
-                st.image("output_chart.png", caption="Generated Enterprise Visualization")
 
     user_query = st.chat_input("Ask an executive business question...")
     if suggested_q:
@@ -711,19 +709,14 @@ with chat_tab1:
                     
             st.markdown(ans_text)
             
-            if not new_chart:
-                if os.path.exists("output_chart.png"):
-                    new_chart = "output_chart.png"
-                elif os.path.exists("dashboard_chart.png"):
-                    new_chart = "dashboard_chart.png"
-                    
+            # Display image ONLY if a new chart was explicitly generated for this query
             if new_chart and os.path.exists(new_chart):
                 st.image(new_chart, caption="Generated Enterprise Visualization")
                 
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": ans_text,
-                "chart": new_chart
+                "chart": new_chart if (new_chart and os.path.exists(new_chart)) else None
             })
 
 with chat_tab2:

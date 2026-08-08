@@ -54,6 +54,16 @@ Provide dynamic, context-aware responses tailored strictly to the user's input i
     sub_agents=[semantic_agent, analytics_agent, visualization_agent, consultant_agent]
 )
 
+def clean_stale_charts():
+    """Removes leftover chart image files before executing new queries."""
+    for chart_name in ["output_chart.png", "dashboard_chart.png"]:
+        chart_file = os.path.join(BASE_DIR, chart_name)
+        if os.path.exists(chart_file):
+            try:
+                os.remove(chart_file)
+            except Exception:
+                pass
+
 def generate_dynamic_fallback(query: str) -> Tuple[str, str]:
     """
     Decoupled dynamic engine. Dynamically analyzes the user query against the enterprise dataset
@@ -76,18 +86,17 @@ def generate_dynamic_fallback(query: str) -> Tuple[str, str]:
             return f"[Predictive Intelligence Output]\n{ml_res}", None
 
         # 3. Visualization Intent Check
-        if any(w in query_lower for w in ['chart', 'plot', 'graph', 'visual', 'trend', 'distribution', 'bar', 'histogram']):
+        if any(w in query_lower for w in ['chart', 'plot', 'graph', 'visualize', 'distribution', 'bar chart', 'histogram']):
             plot_res = generate_plot(query)
             out_p = os.path.join(BASE_DIR, "output_chart.png")
-            dash_p = os.path.join(BASE_DIR, "dashboard_chart.png")
-            chart_file = out_p if os.path.exists(out_p) else (dash_p if os.path.exists(dash_p) else None)
+            chart_file = out_p if os.path.exists(out_p) else None
             return plot_res, chart_file
 
         # 4. Executive Summary / Strategy Intent Check
         if any(w in query_lower for w in ['summary', 'overview', 'strategy', 'recommend', 'insight', 'consultant']):
             return generate_executive_strategy(query), None
 
-        # 5. Dynamic Analytics Intent
+        # 5. Dynamic Analytics Intent (Calculations, Numbers, KPIs)
         return execute_pandas_analysis(query), None
 
     except Exception as e:
@@ -113,6 +122,7 @@ class ADKOrchestratorPipeline:
         """
         Executes query with mode-based agent isolation, dynamic dataset analysis, and semantic guardrails.
         """
+        clean_stale_charts()
         mode_lower = str(workflow_mode).lower().strip()
         
         # 1. Direct Semantic Validation Agent Mode
@@ -138,11 +148,10 @@ class ADKOrchestratorPipeline:
             return df_ans, None
 
         # 4. Direct Visualization Mode
-        if "visualization" in mode_lower or "viz" in mode_lower or any(w in query.lower() for w in ['chart', 'plot', 'graph', 'visual', 'bar']):
+        if "visualization" in mode_lower or "viz" in mode_lower:
             plot_res = generate_plot(query)
             out_p = os.path.join(BASE_DIR, "output_chart.png")
-            dash_p = os.path.join(BASE_DIR, "dashboard_chart.png")
-            chart_file = out_p if os.path.exists(out_p) else (dash_p if os.path.exists(dash_p) else None)
+            chart_file = out_p if os.path.exists(out_p) else None
             return plot_res, chart_file
 
         # 5. Direct Predictive Risk Mode
@@ -162,8 +171,6 @@ class ADKOrchestratorPipeline:
             os.environ["GOOGLE_API_KEY"] = api_key
 
         out_p = os.path.join(BASE_DIR, "output_chart.png")
-        dash_p = os.path.join(BASE_DIR, "dashboard_chart.png")
-
         start_time = time.time()
         quota_warning = key_manager.record_request_and_check_warning()
         
@@ -207,9 +214,7 @@ class ADKOrchestratorPipeline:
             return final_text, new_chart
 
         final_text = "\n\n".join(response_texts)
-        new_chart = out_p if os.path.exists(out_p) and os.path.getmtime(out_p) >= start_time - 1 else (
-            dash_p if os.path.exists(dash_p) and os.path.getmtime(dash_p) >= start_time - 1 else None
-        )
+        new_chart = out_p if os.path.exists(out_p) and os.path.getmtime(out_p) >= start_time - 1 else None
 
         return final_text, new_chart
 
