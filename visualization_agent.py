@@ -19,6 +19,7 @@ except ImportError:
 def generate_plot(query_or_code: str = "") -> str:
     """
     Dynamically generates custom matplotlib/seaborn plots strictly based on the user's requested dataset columns.
+    Extracts the exact columns specified in the input query and renders targeted visual charts.
     Saves high-resolution output images to output_chart.png and dashboard_chart.png.
     """
     try:
@@ -44,56 +45,67 @@ def generate_plot(query_or_code: str = "") -> str:
             plt.close('all')
             return f"[Visualization Engine Output] Executed custom Python plotting code. Saved chart to output_chart.png."
 
-        # 2. Dynamic Column Matcher
-        matched_cols = [c for c in cols if c.lower() in query_lower or any(part in c.lower() for part in query_lower.split() if len(part) > 3)]
+        # 2. Dynamic Column Extraction Engine: Find ALL dataset columns mentioned in user input
+        matched_cols = []
+        for col in cols:
+            col_lower = col.lower()
+            col_clean = col_lower.replace('_', ' ')
+            col_words = [w for w in col_clean.split() if len(w) > 2]
+            
+            # Direct full or space/underscore match
+            if col_lower in query_lower or col_clean in query_lower or col_lower.replace('_', '') in query_lower:
+                if col not in matched_cols:
+                    matched_cols.append(col)
+            # Distinctive word match
+            elif any(w in query_lower for w in col_words if w not in ['type', 'code', 'name', 'usd', 'sec', 'score', 'id', 'date', 'level']):
+                if col not in matched_cols:
+                    matched_cols.append(col)
 
-        title_text = f"Enterprise Data Analysis: {input_str[:40]}"
-        
-        # Specific Column Combination 1: SLA vs Priority Level
-        if any(w in query_lower for w in ['sla', 'breach']) and any(w in query_lower for w in ['priority', 'level']):
-            prio_data = df.groupby(['Priority_Level', 'SLA_Breached']).size().reset_index(name='Count')
-            sns.barplot(data=prio_data, x='Priority_Level', y='Count', hue='SLA_Breached', palette=['#1E3A8A', '#E11D48'], ax=ax)
-            ax.set_title("Operational SLA Compliance by Priority Level", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
-            ax.set_xlabel("Priority Level", fontsize=10, fontweight='bold')
-            ax.set_ylabel("Query / Ticket Volume", fontsize=10, fontweight='bold')
+        # 3. Dynamic Multi-Column Plotting Engine
+        if len(matched_cols) >= 2:
+            col1, col2 = matched_cols[0], matched_cols[1]
+            
+            col1_num = pd.api.types.is_numeric_dtype(df[col1])
+            col2_num = pd.api.types.is_numeric_dtype(df[col2])
 
-        # Specific Column Combination 2: Revenue / Transaction Amount by Department
-        elif any(w in query_lower for w in ['revenue', 'transaction', 'amount', 'usd', 'financial', 'cost']) and 'Department' in df.columns:
-            amt_col = 'Transaction_Amount_USD' if 'Transaction_Amount_USD' in df.columns else ('Revenue_Impact_USD' if 'Revenue_Impact_USD' in df.columns else None)
-            if amt_col:
-                dept_rev = df.groupby('Department')[amt_col].sum().reset_index().sort_values(amt_col, ascending=False)
-                bars = sns.barplot(data=dept_rev, x='Department', y=amt_col, hue='Department', palette='viridis', legend=False, ax=ax)
-                ax.set_title(f"Total {amt_col.replace('_', ' ')} by Department", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
-                ax.set_ylabel("Total Financial Amount ($ USD)", fontsize=10, fontweight='bold')
-                for p in bars.patches:
-                    h = p.get_height()
-                    if h > 0:
-                        ax.annotate(f'${h:,.0f}', (p.get_x() + p.get_width()/2., h), ha='center', va='bottom', fontsize=8.5, fontweight='bold')
-
-        # Specific Column Combination 3: Processing Duration vs Complexity Score
-        elif any(w in query_lower for w in ['processing', 'duration', 'time', 'seconds', 'complexity', 'scatter']):
-            if 'Query_Complexity_Score' in df.columns and 'Processing_Time_Sec' in df.columns:
+            if col1_num and col2_num:
+                # 2 Numeric Columns -> Scatter Plot
                 sample = df.sample(min(1500, len(df)))
-                sns.scatterplot(data=sample, x='Query_Complexity_Score', y='Processing_Time_Sec', hue='SLA_Breached' if 'SLA_Breached' in df.columns else None, palette=['#0D9488', '#E11D48'], alpha=0.7, s=35, ax=ax)
-                ax.set_title("Processing Duration (Sec) vs Query Complexity Score", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
-                ax.set_xlabel("Query Complexity Score (1-10)", fontsize=10, fontweight='bold')
-                ax.set_ylabel("Processing Duration (Seconds)", fontsize=10, fontweight='bold')
+                sns.scatterplot(data=sample, x=col1, y=col2, hue='SLA_Breached' if 'SLA_Breached' in df.columns else None, palette=['#0D9488', '#E11D48'], alpha=0.7, s=35, ax=ax)
+                ax.set_title(f"{col2} vs {col1} Scatter Analysis", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
 
-        # Specific Column Combination 4: Human Review Distribution
-        elif any(w in query_lower for w in ['human', 'review', 'automation', 'risk', 'manual']):
-            if 'Requires_Human_Review' in df.columns:
-                rev_df = df['Requires_Human_Review'].value_counts().reset_index()
-                rev_df.columns = ['Status', 'Count']
-                rev_df['Status'] = rev_df['Status'].map({True: 'Requires Human Review', False: 'Automated Resolution', 1: 'Requires Human Review', 0: 'Automated Resolution'})
-                bars = sns.barplot(data=rev_df, x='Status', y='Count', hue='Status', palette=['#10B981', '#F59E0B'], legend=False, ax=ax)
-                ax.set_title("Human Review Requirement Distribution", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
+            elif not col1_num and col2_num:
+                # col1 Categorical, col2 Numeric -> Grouped Bar Plot
+                top_cats = df[col1].value_counts().head(8).index
+                sub_df = df[df[col1].isin(top_cats)]
+                grp = sub_df.groupby(col1)[col2].mean().reset_index().sort_values(col2, ascending=False)
+                bars = sns.barplot(data=grp, x=col1, y=col2, hue=col1, palette='viridis', legend=False, ax=ax)
+                ax.set_title(f"Average {col2} by {col1}", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
                 for p in bars.patches:
                     h = p.get_height()
                     if h > 0:
-                        ax.annotate(f'{int(h):,}', (p.get_x() + p.get_width()/2., h), ha='center', va='bottom', fontsize=9, fontweight='bold')
+                        ax.annotate(f'{h:,.1f}', (p.get_x() + p.get_width()/2., h), ha='center', va='bottom', fontsize=8.5, fontweight='bold')
 
-        # Dynamic Column Matching Fallback: Use matched column from user query
-        elif len(matched_cols) >= 1:
+            elif col1_num and not col2_num:
+                # col1 Numeric, col2 Categorical -> Grouped Bar Plot
+                top_cats = df[col2].value_counts().head(8).index
+                sub_df = df[df[col2].isin(top_cats)]
+                grp = sub_df.groupby(col2)[col1].mean().reset_index().sort_values(col1, ascending=False)
+                bars = sns.barplot(data=grp, x=col2, y=col1, hue=col2, palette='mako', legend=False, ax=ax)
+                ax.set_title(f"Average {col1} by {col2}", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
+                for p in bars.patches:
+                    h = p.get_height()
+                    if h > 0:
+                        ax.annotate(f'{h:,.1f}', (p.get_x() + p.get_width()/2., h), ha='center', va='bottom', fontsize=8.5, fontweight='bold')
+
+            else:
+                # 2 Categorical Columns -> Stacked/Hue Countplot
+                top_cats = df[col1].value_counts().head(6).index
+                sub_df = df[df[col1].isin(top_cats)]
+                sns.countplot(data=sub_df, x=col1, hue=col2, palette='rocket', ax=ax)
+                ax.set_title(f"{col1} Breakdown by {col2}", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
+
+        elif len(matched_cols) == 1:
             col_target = matched_cols[0]
             if pd.api.types.is_numeric_dtype(df[col_target]):
                 sns.histplot(df[col_target], kde=True, color='#1E3A8A', ax=ax)
@@ -102,13 +114,21 @@ def generate_plot(query_or_code: str = "") -> str:
             else:
                 top_cat = df[col_target].value_counts().head(8).reset_index()
                 top_cat.columns = [col_target, 'Count']
-                sns.barplot(data=top_cat, x=col_target, y='Count', hue=col_target, palette='crest', legend=False, ax=ax)
-                ax.set_title(f"Category Breakdown of {col_target}", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
+                bars = sns.barplot(data=top_cat, x=col_target, y='Count', hue=col_target, palette='crest', legend=False, ax=ax)
+                ax.set_title(f"Category Volume Breakdown: {col_target}", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
                 ax.set_xlabel(col_target, fontsize=10, fontweight='bold')
+                for p in bars.patches:
+                    h = p.get_height()
+                    if h > 0:
+                        ax.annotate(f'{int(h):,}', (p.get_x() + p.get_width()/2., h), ha='center', va='bottom', fontsize=8.5, fontweight='bold')
 
         else:
-            # Fallback when plot requested but no specific column matched: Plot overall Priority Level Distribution
-            if 'Priority_Level' in df.columns:
+            # Fallback if no specific column matched: Use Department and Transaction_Amount_USD / Priority_Level dynamically
+            if 'Department' in df.columns and 'Transaction_Amount_USD' in df.columns:
+                dept_rev = df.groupby('Department')['Transaction_Amount_USD'].sum().reset_index().sort_values('Transaction_Amount_USD', ascending=False)
+                bars = sns.barplot(data=dept_rev, x='Department', y='Transaction_Amount_USD', hue='Department', palette='viridis', legend=False, ax=ax)
+                ax.set_title("Department Total Transaction Volume ($ USD)", fontsize=13, fontweight='bold', pad=12, color='#1e3a8a')
+            elif 'Priority_Level' in df.columns:
                 p_df = df['Priority_Level'].value_counts().reset_index()
                 p_df.columns = ['Priority_Level', 'Count']
                 sns.barplot(data=p_df, x='Priority_Level', y='Count', hue='Priority_Level', palette='rocket', legend=False, ax=ax)
@@ -122,7 +142,8 @@ def generate_plot(query_or_code: str = "") -> str:
         plt.savefig(dash_path, dpi=300, bbox_inches='tight')
         plt.close('all')
 
-        return f"[Visualization Engine Output] Executive chart successfully generated for query: *\"{input_str}\"* and rendered below."
+        plot_description = f"Columns matched: {', '.join(matched_cols)}" if matched_cols else "Operational dimension view"
+        return f"[Visualization Engine Output] Executive chart generated for: *\"{input_str}\"* ({plot_description}) and rendered below."
     except Exception as e:
         plt.close('all')
         return f"[Visualization Engine Output] Plot execution error: {str(e)}"
